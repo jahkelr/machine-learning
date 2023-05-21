@@ -6,8 +6,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 df = pd.read_csv("Hunger Games survival analysis data set.csv")
 
-df.head()
-
 df.fillna(0, inplace=True)
 
 X = df.drop(columns=["survival_days", "name"])
