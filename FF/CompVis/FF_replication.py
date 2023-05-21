@@ -4,7 +4,7 @@ import torch
 
 from datasets import MNIST_loaders, CIFAR10_loaders
 from helpers import overlay_y_on_x, visualize_sample
-from FF_Arch import Net
+from FF_model import Net
 
 
 def main(args):
