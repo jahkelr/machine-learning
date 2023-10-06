@@ -23,7 +23,7 @@ class Evaluator:
         images, labels = next(dataiter)
 
         # print images
-        #self.imshow(torchvision.utils.make_grid(images))
+        # self.imshow(torchvision.utils.make_grid(images))
         print(
             "GroundTruth: ", " ".join(f"{self.classes[labels[j]]:5s}" for j in range(4))
         )

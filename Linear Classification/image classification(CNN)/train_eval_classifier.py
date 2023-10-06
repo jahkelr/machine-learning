@@ -63,8 +63,9 @@ def init_time_data():
 
     return transform, batch_size, trainset, trainloader, testset, testloader, classes
 
+
 # Test dataset
-'''
+"""
 (
     transform,
     batch_size,
@@ -74,7 +75,7 @@ def init_time_data():
     testloader,
     classes,
 ) = init_cifar10_data()
-'''
+"""
 
 # Replace test dataset
 (

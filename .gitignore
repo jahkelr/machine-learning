@@ -4,5 +4,6 @@ output
 *.pth
 models
 mlflow
+mlruns
 *.sh
 __pycache__
