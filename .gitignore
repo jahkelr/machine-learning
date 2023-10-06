@@ -1,2 +1,8 @@
 .DS_Store
 data
+output
+*.pth
+models
+mlflow
+*.sh
+__pycache__
