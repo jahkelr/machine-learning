@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 app = FastAPI()
 
 # Load the RAG model and tokenizer
-model_path = "facebook/rag-token-base"
+model_path = "facebook/rag-token-base" # Update to use fine-tuned
 retriever = RagRetriever.from_pretrained(model_path)
 config = RagConfig.from_pretrained(model_path, retriever=retriever)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_path, config=config)
