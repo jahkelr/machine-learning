@@ -1,0 +1,16 @@
+version: '1'
+
+services:
+  rag-container:
+    build:
+      context: ./deployments/rag-container  # Directory containing the RAG Dockerfile
+    volumes:
+      - ./rag-model:/app/rag-container  # Mount the RAG model directory
+    ports:
+      - "8001:8001"  # Expose a port for communication with the FastAPI container
+
+  fastapi-app:
+    build:
+      context: ./deployments/fastapi-app  # Directory containing the FastAPI Dockerfile
+    ports:
+      - "8000:8000"  # Expose FastAPI on port 8000
