@@ -2,11 +2,14 @@
 
 ## How new models are trained
 
-`python train.py`
+```shell
+python train.py
+```
 
 ## How to create appliaction loacally
 
-```docker-compose build
+```shell
+docker-compose build
 docker-compose up
 ```
 
@@ -14,7 +17,8 @@ docker-compose up
 
 ### Input
 
-```curl -X POST -H "Content-Type: application/json" -d '{"question":"What is the capitol of France?"}' "http://localhost:8000/ask"
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"question":"What is the capitol of France?"}' "http://localhost:8000/ask"
 ```
 
 ### Output
