@@ -7,6 +7,9 @@ import keyboard
 from tqdm import tqdm
 import random
 import speech_recognition as sr
+import fastapi
+
+app = fastapi.FastAPI()
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -89,14 +92,46 @@ def sample_context(path):
         return random.sample(lines, 1)[0]
 
 
+@app.get("/run/")
+def run(context: str):
+    try:
+        print(context)
+        idx_start = len(context)
+
+        # Model
+        with open("models/generator.pth", "rb") as f:
+            model = torch.load(f, map_location=torch.device("cpu"))
+
+        # Tokenizer
+        with open("models/tokenizer.pth", "rb") as f:
+            tokenizer = torch.load(f, map_location=torch.device("cpu"))
+
+        # Create output file
+        with open("output/crazy.txt", "w") as crazy:
+            # Generate while reseeding 5 times
+            for _ in tqdm(range(5)):
+                context = generate(model, tokenizer, str(context).strip())
+                context = (
+                    context.replace("\n", "")
+                    .replace("<|endoftext|>", "")
+                    .replace("<pad>", "")
+                )
+            # Write completed generation to file
+            crazy.write(context)
+            # Display response
+            print(context[idx_start:])
+    except Exception as e:
+        raise fastapi.HTTPException(status_code=500, detail=f"Blew up: {e}")
+
+
 def main():
-    # Model
+     # Model
     with open("models/generator.pth", "rb") as f:
-        model = torch.load(f, map_location=torch.device('cpu'))
-    
+        model = torch.load(f, map_location=torch.device("cpu"))
+
     # Tokenizer
     with open("models/tokenizer.pth", "rb") as f:
-        tokenizer = torch.load(f, map_location=torch.device('cpu'))
+        tokenizer = torch.load(f, map_location=torch.device("cpu"))
 
     # create recognizer and mic instances
     recognizer = sr.Recognizer()
@@ -114,7 +149,11 @@ def main():
                 # Generate while reseeding 5 times
                 for _ in tqdm(range(5)):
                     context = generate(model, tokenizer, str(context).strip())
-                    context = context.replace("\n", "").replace("<|endoftext|>", "").replace("<pad>", "")
+                    context = (
+                        context.replace("\n", "")
+                        .replace("<|endoftext|>", "")
+                        .replace("<pad>", "")
+                    )
                 # Write completed generation to file
                 crazy.write(context)
                 # Display response
@@ -123,4 +162,7 @@ def main():
                 #  speak(context[idx_start:])
 
 
-main()
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="localhost", port=8001)

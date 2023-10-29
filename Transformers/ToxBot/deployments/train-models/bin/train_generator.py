@@ -16,6 +16,7 @@ from torch.optim import AdamW
 import mlflow
 import evaluate
 
+
 class Transformed_ds(Dataset):
     def __init__(self, dataset: pd.DataFrame, tokenizer) -> None:
         super().__init__()
@@ -35,7 +36,9 @@ class Transformed_ds(Dataset):
         # Create shifted input sequences as labels
         self.labels = self.inputs["input_ids"].clone()
         self.labels[:, :-1] = self.labels[:, 1:]
-        self.labels[:, -1] = tokenizer.pad_token_id  # Set the last token to the pad token ID
+        self.labels[
+            :, -1
+        ] = tokenizer.pad_token_id  # Set the last token to the pad token ID
 
     def __len__(self):
         return len(self.inputs["input_ids"])
@@ -46,6 +49,7 @@ class Transformed_ds(Dataset):
             "attention_mask": self.inputs["attention_mask"][index],
             "labels": self.labels[index],
         }
+
 
 class T5Trainer:
     def __init__(self) -> None:
@@ -93,7 +97,7 @@ class T5Trainer:
         self.model.to(self.device)
 
         # Save tokenizer
-        with open("tokenizer.pt", "wb") as f:
+        with open("models/tokenizer.pt", "wb") as f:
             torch.save(self.tokenizer, f)
 
         progress_bar = tqdm(range(num_training_steps), desc="Training Progress:")
@@ -110,20 +114,20 @@ class T5Trainer:
                 self.optimizer.zero_grad()
                 progress_bar.update(1)
 
-        with open("model.pth", "wb") as f:
+        with open("models/model.pth", "wb") as f:
             torch.save(self.model, f)
 
     def evaluate(self):
         metric = evaluate.load("rouge")
 
-        if os.path.exists("model.pth"):
-            with open("model.pth", "rb") as f:
+        if os.path.exists("models/model.pth"):
+            with open("models/model.pth", "rb") as f:
                 model = torch.load(f)
             self.model = model
 
         self.model.eval()
 
-        progress_bar = tqdm(range(len(self.dataloader)), desc="Training Progress:")
+        progress_bar = tqdm(range(len(self.dataloader)), desc="Evaluation Progress:")
 
         for batch in self.dataloader:
             with torch.no_grad():
@@ -142,20 +146,22 @@ class T5Trainer:
 
         return metric_value
 
-def main():
-    #mlflow.set_tracking_uri("http://host.docker.internal:8080")  # Set the appropriate tracking URI
-    #with mlflow.start_run():
-    trainer = T5Trainer()
-    trainer.load_datasets()
-    
-    trainer.train()
-    metric_value = trainer.evaluate()
 
-    # Log the evaluation metric to the run
-    mlflow.log_metric("final_metric", metric_value)
+def main():
+    mlflow.set_tracking_uri("http://mlflow:8080")  # Set the appropriate tracking URI
+    with mlflow.start_run():
+        trainer = T5Trainer()
+        trainer.load_datasets()
+
+        trainer.train()
+        metric_value = trainer.evaluate()
+
+        # Log the evaluation metric to the run
+        mlflow.log_metric("final_metric", metric_value)
 
     # End the run
-    #mlflow.end_run()
+    mlflow.end_run()
+
 
 if __name__ == "__main__":
     main()

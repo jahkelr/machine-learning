@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow
+    container_name: mlflow
+    ports:
+      - 8080:8080
+    command: mlflow server --host 0.0.0.0 -p 8080
+
+  trainers:
+    build:
+      context: ./deployments/train-models
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mlflow
+
+  generator-container:
+    build:
+      context: ./deployments/generator-container  # Directory containing the Dockerfile
+    volumes:
+      - ./models:/app/models  # Mount the model directory
+    ports:
+      - "8001:8001"  # Expose a port for communication with the FastAPI container
+
+  toxbot-app:
+    build:
+      context: ./deployments/toxbot-app  # Directory containing the FastAPI Dockerfile
+    ports:
+      - "8000:8000"  # Expose FastAPI on port 8000
