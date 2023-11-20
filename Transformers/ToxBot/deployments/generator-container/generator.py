@@ -1,8 +1,10 @@
 import torch
 from gtts import gTTS
+import argparse
 
 import os
 import keyboard
+import time
 
 from tqdm import tqdm
 import random
@@ -10,6 +12,8 @@ import speech_recognition as sr
 import fastapi
 
 app = fastapi.FastAPI()
+
+date = time.time()
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -81,9 +85,9 @@ def generate(model, tokenizer, context):
 
 def speak(text):
     myobj = gTTS(text=text, lang="en", slow=False)
-    myobj.save("output/speech.mp3")
+    myobj.save(f"output/speech-{date}.mp3")
     # Playing the converted file
-    return os.system("mpg321 output/speech.mp3")
+    return os.system(f"mpg321 output/speech-{date}.mp3")
 
 
 def sample_context(path):
@@ -126,11 +130,11 @@ def run(context: str):
 
 def main():
      # Model
-    with open("models/generator.pth", "rb") as f:
+    with open("../../models/generator.pth", "rb") as f:
         model = torch.load(f, map_location=torch.device("cpu"))
 
     # Tokenizer
-    with open("models/tokenizer.pth", "rb") as f:
+    with open("../../models/tokenizer.pth", "rb") as f:
         tokenizer = torch.load(f, map_location=torch.device("cpu"))
 
     # create recognizer and mic instances
@@ -141,11 +145,11 @@ def main():
         print("\n\n\n\n\n\n\n\n\n\n\n\nReady.")
         if keyboard.read_key() == "space":
             # context = recognize_speech_from_mic(recognizer, microphone)["transcription"]
-            context = sample_context("data/context.txt")
+            context = sample_context("../../data/context.txt")
             idx_start = len(context)
 
             # Create output file
-            with open("output/crazy.txt", "w") as crazy:
+            with open(f"../../output/crazy-{date}.txt", "w") as crazy:
                 # Generate while reseeding 5 times
                 for _ in tqdm(range(5)):
                     context = generate(model, tokenizer, str(context).strip())
@@ -159,10 +163,18 @@ def main():
                 # Display response
                 print(context[idx_start:])
                 # Create and play an audio file of the output
-                #  speak(context[idx_start:])
+                speak(context[idx_start:])
 
 
 if __name__ == "__main__":
-    import uvicorn
 
-    uvicorn.run(app, host="localhost", port=8001)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test", action="store_true")
+    args = parser.parse_args()
+    
+    if args.test:
+        main()
+    else:
+        import uvicorn
+
+        uvicorn.run(app, host="localhost", port=8001)

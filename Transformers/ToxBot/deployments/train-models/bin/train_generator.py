@@ -4,8 +4,8 @@ import pandas as pd
 import pickle
 import os
 
-from transformers import T5ForConditionalGeneration
-from transformers import T5Tokenizer
+from transformers import GPT2ForQuestionAnswering
+from transformers import GPT2Tokenizer
 from transformers import get_scheduler
 
 import torch
@@ -25,6 +25,7 @@ class Transformed_ds(Dataset):
 
         # Tokenize input sequences
         self.inputs = tokenizer(
+            dataset["context"].to_list(),
             dataset["Text"].to_list(),
             return_tensors="pt",
             truncation=True,
@@ -33,32 +34,24 @@ class Transformed_ds(Dataset):
             add_special_tokens=True,
         )
 
-        # Create shifted input sequences as labels
-        self.labels = self.inputs["input_ids"].clone()
-        self.labels[:, :-1] = self.labels[:, 1:]
-        self.labels[
-            :, -1
-        ] = tokenizer.pad_token_id  # Set the last token to the pad token ID
-
     def __len__(self):
-        return len(self.inputs["input_ids"])
+        return len(self.inputs)
 
     def __getitem__(self, index):
         return {
-            "input_ids": self.inputs["input_ids"][index],
-            "attention_mask": self.inputs["attention_mask"][index],
-            "labels": self.labels[index],
+            "inputs": self.inputs[index],
         }
 
 
-class T5Trainer:
+class GPT2Trainer:
     def __init__(self) -> None:
-        self.tokenizer = T5Tokenizer.from_pretrained("t5-small")
-        self.model = T5ForConditionalGeneration.from_pretrained("t5-small")
+        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+        self.model = GPT2ForQuestionAnswering.from_pretrained("gpt2")
         self.optimizer = AdamW(self.model.parameters(), lr=5e-5)
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
+        self.batch_size = 64
 
     def compute_metrics(self, eval_pred):
         logits, labels = eval_pred
@@ -76,10 +69,10 @@ class T5Trainer:
             with open("data/processed_data.pkl", "rb") as file:
                 tds = pickle.load(file)
 
-        self.dataloader = DataLoader(tds, shuffle=True, batch_size=8)
+        self.dataloader = DataLoader(tds, shuffle=True, batch_size=self.batch_size)
 
     def train(self):
-        num_epochs = 3
+        num_epochs = 1
         num_training_steps = num_epochs * len(self.dataloader)
         lr_scheduler = get_scheduler(
             name="linear",
@@ -97,7 +90,7 @@ class T5Trainer:
         self.model.to(self.device)
 
         # Save tokenizer
-        with open("models/tokenizer.pt", "wb") as f:
+        with open("../../models/tokenizer.pt", "wb") as f:
             torch.save(self.tokenizer, f)
 
         progress_bar = tqdm(range(num_training_steps), desc="Training Progress:")
@@ -132,6 +125,7 @@ class T5Trainer:
         for batch in self.dataloader:
             with torch.no_grad():
                 outputs = self.model(**batch)
+                self.model.forward()
 
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
@@ -148,9 +142,9 @@ class T5Trainer:
 
 
 def main():
-    mlflow.set_tracking_uri("http://mlflow:8080")  # Set the appropriate tracking URI
+    mlflow.set_tracking_uri("http://0.0.0.0:8080")  # Set the appropriate tracking URI
     with mlflow.start_run():
-        trainer = T5Trainer()
+        trainer = GPT2Trainer()
         trainer.load_datasets()
 
         trainer.train()

@@ -1,5 +1,3 @@
-# Dockerfile for FastAPI endpoint
-
 # Use a base image with Python and necessary dependencies
 FROM python:3.10
 
