@@ -1,9 +1,0 @@
-.DS_Store
-data
-output
-*.pth
-models
-mlflow
-mlruns
-*.sh
-__pycache__
